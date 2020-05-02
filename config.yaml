@@ -1,0 +1,17 @@
+__APP__:
+    log_level: DEBUG
+    jwt_secret: rRUSOWmx1r
+tickets:
+    queue_name: ticket_master_q
+api:
+    -
+        path: /v1/basic-api
+        method: ~
+        handler: message_queue
+        queue_name: basic_api_q
+    -
+        path: /v1/heart-beat
+        method: GET
+        handler: reverse_proxy
+        redirect_path: http://localhost:8080/heart-beat
+        ignore_path: true

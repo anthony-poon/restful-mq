@@ -1,0 +1,31 @@
+{
+    "name": "message-queue-service",
+    "version": "0.0.0",
+    "private": true,
+    "scripts": {
+        "start-worker": "node ./bin/basic_message_worker.js",
+        "start": "node ./bin/www",
+        "dev": "concurrently --kill-others --names \"SERVER,WORKER\" -c \"bgBlue.bold,bgMagenta.bold\" \"npm run start\" \"npm run start-worker\"",
+        "test": "jest"
+    },
+    "dependencies": {
+        "amqplib": "^0.5.5",
+        "cookie-parser": "~1.4.4",
+        "debug": "~2.6.9",
+        "express": "~4.16.1",
+        "http-proxy": "^1.18.0",
+        "js-yaml": "^3.13.1",
+        "jsonwebtoken": "^8.5.1",
+        "lodash": "^4.17.15",
+        "moment": "^2.25.1",
+        "morgan": "~1.9.1",
+        "node-cache": "^5.1.0",
+        "uniqid": "^5.2.0",
+        "winston": "^3.2.1"
+    },
+    "devDependencies": {
+        "concurrently": "^5.2.0",
+        "jest": "^25.5.2",
+        "supertest": "^4.0.2"
+    }
+}

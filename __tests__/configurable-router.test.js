@@ -1,11 +1,9 @@
-
-beforeEach(() => {
-    jest.resetModules();
-});
-
 describe("Testing the configuration router", () => {
     it("should return a router for valid config", () => {
-        const router = require("../lib/configurable-router");
+        const context = {
+            logger: { info: jest.fn() }
+        };
+        const router = require("../lib/configurable-router")(context);
         const config = [
             {
                 "path": "/v1/test_1",
@@ -39,7 +37,10 @@ describe("Testing the configuration router", () => {
     });
 
     it("should have correct routes", () => {
-        const router = require("../lib/configurable-router");
+        const context = {
+            logger: { info: jest.fn() }
+        };
+        const router = require("../lib/configurable-router")(context);
         router.setRoutes([{
             "path": "/v1/test",
             "method": null,
@@ -89,11 +90,13 @@ describe("Testing the configuration router", () => {
             "ignore_path": false,
             "redirect_path": "http://www.exmaple.com"
         });
-        router.clearRoutes();
     });
 
     it("validate incorrect config", () => {
-        const router = require("../lib/configurable-router");
+        const context = {
+            logger: { info: jest.fn() }
+        };
+        const router = require("../lib/configurable-router")(context);
         expect(() => {
             router.setRoutes([{
                 "method": null,
@@ -143,11 +146,14 @@ describe("Testing the configuration router", () => {
     });
 
     it("Should call the message queue handler.", () => {
+        const context = {
+            logger: { info: jest.fn() }
+        };
         const mqHandler = jest.fn();
         const rpHandler = jest.fn();
         const next = jest.fn();
         const res = jest.fn();
-        const router = require("../lib/configurable-router");
+        const router = require("../lib/configurable-router")(context);
         router.setRoutes([
             {
                 "path": "/v1/test_1",
@@ -167,25 +173,29 @@ describe("Testing the configuration router", () => {
         router.on("message_queue", mqHandler);
         router.on("reverse_proxy", rpHandler);
         router({
-            path: "/v1/test_1"
+            path: "/v1/test_1",
+            method: "GET"
         }, res, next);
         expect(mqHandler).toHaveBeenCalledTimes(1);
         expect(rpHandler).toHaveBeenCalledTimes(0);
         expect(next).toHaveBeenCalledTimes(0);
         router({
-            path: "/v1/test_2"
+            path: "/v1/test_2",
+            method: "GET"
         }, res, next);
         expect(mqHandler).toHaveBeenCalledTimes(1);
         expect(rpHandler).toHaveBeenCalledTimes(1);
         expect(next).toHaveBeenCalledTimes(0);
         router({
-            path: "/v1/asdfsd"
+            path: "/v1/asdfsd",
+            method: "GET"
         }, res, next);
         expect(mqHandler).toHaveBeenCalledTimes(1);
         expect(rpHandler).toHaveBeenCalledTimes(1);
         expect(next).toHaveBeenCalledTimes(1);
         router({
-            path: "/v1/test_3_abc"
+            path: "/v1/test_3_abc",
+            method: "GET"
         }, {}, next);
         expect(mqHandler).toHaveBeenCalledTimes(1);
         expect(rpHandler).toHaveBeenCalledTimes(2);

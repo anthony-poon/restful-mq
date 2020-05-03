@@ -1,7 +1,7 @@
 log_level: DEBUG
 jwt_secret: rRUSOWmx1r
 port: 8080
-reply_queue: ticket_master_q
+reply_queue: reply_q
 api:
     -
         path: /v1/basic-api

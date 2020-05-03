@@ -6,7 +6,7 @@ const winston = require('winston');
 const amqp = require('amqplib');
 const httpProxy = require('http-proxy');
 const http = require('http');
-
+const bodyParser = require("body-parser");
 class RestMQ {
     constructor(config = {}) {
         this.parseConfig(config);
@@ -55,6 +55,7 @@ class RestMQ {
         this._logger.info("Logger initialized. Log level: " + this._config.logLevel.toUpperCase());
 
         this._app = express();
+        this._app.use(bodyParser.text());
         this._app.use(express.json());
         this._app.use(express.urlencoded({ extended: false }));
 

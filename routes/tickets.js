@@ -28,7 +28,7 @@ module.exports = async (context) => {
     });
 
     channel.consume(queueName, (msg) => {
-        logger.info("Received a ticket.");
+        logger.info("Received a reply.");
         logger.debug("Message: " + msg.content.toString());
         const ticket = JSON.parse(msg.content.toString());
         let isValid = !!ticket.id;

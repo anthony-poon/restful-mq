@@ -47,8 +47,10 @@ const worker = {
             const reply = {
                 id: ticket.id,
                 response: {
-                    "received": moment().format(),
+                    received: moment().format(),
+                    ...payload
                 }
+
             };
             setTimeout(() => {
                 reply["response"]["completed"] = moment().format();

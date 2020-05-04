@@ -25,7 +25,7 @@ beforeAll((done) => {
     (async () => {
         server = new RestMQ(config);
         await server.start();
-        express = server._app;
+        express = server.context.app;
         worker = require("../bin/basic_message_worker");
         await worker.start();
         done();

@@ -1,10 +1,15 @@
+const ConfigurableRouter = require("../lib/configurable-router");
+
+const createContext = (routes) => {
+    return {
+        config: {
+            api: routes
+        }
+    }
+};
 describe("Testing the configuration router", () => {
     it("should return a router for valid config", () => {
-        const context = {
-            logger: { info: jest.fn() }
-        };
-        const router = require("../lib/configurable-router")(context);
-        const config = [
+        const routes = [
             {
                 "path": "/v1/test_1",
                 "method": null,
@@ -32,116 +37,57 @@ describe("Testing the configuration router", () => {
                 "redirect_path": "http://www.example.com"
             }
         ];
-        router.setRoutes(config);
+        const router = new ConfigurableRouter(createContext(routes));
         expect(router.routes.length).toBe(5);
     });
 
-    it("should have correct routes", () => {
-        const context = {
-            logger: { info: jest.fn() }
-        };
-        const router = require("../lib/configurable-router")(context);
-        router.setRoutes([{
-            "path": "/v1/test",
-            "method": null,
-            "handler": "message_queue",
-            "queue_name": "test_q"
-        }]);
-        expect(router.routes[0]).toMatchObject({
-            "path": "/v1/test",
-            "methods": ["all"],
-            "handler": "message_queue",
-            "queue_name": "test_q"
-        });
-        router.setRoutes([{
-            "path": "/v1/test",
-            "method": ["GET", "post"],
-            "handler": "message_queue",
-            "queue_name": "test_q"
-        }]);
-        expect(router.routes[0]).toMatchObject({
-            "path": "/v1/test",
-            "methods": ["get", "post"],
-            "handler": "message_queue",
-            "queue_name": "test_q"
-        });
-        router.setRoutes([{
-            "path": "/v1/test",
-            "method": "pUt",
-            "handler": "message_queue",
-            "queue_name": "test_q"
-        }]);
-        expect(router.routes[0]).toMatchObject({
-            "path": "/v1/test",
-            "methods": ["put"],
-            "handler": "message_queue",
-            "queue_name": "test_q"
-        });
-        router.setRoutes([{
-            "path": "/v1/test",
-            "method": "delete",
-            "handler": "reverse_proxy",
-            "redirect_path": "http://www.exmaple.com"
-        }]);
-        expect(router.routes[0]).toMatchObject({
-            "path": "/v1/test",
-            "methods": ["delete"],
-            "handler": "reverse_proxy",
-            "ignore_path": false,
-            "redirect_path": "http://www.exmaple.com"
-        });
-    });
-
     it("validate incorrect config", () => {
-        const context = {
-            logger: { info: jest.fn() }
-        };
-        const router = require("../lib/configurable-router")(context);
+
         expect(() => {
-            router.setRoutes([{
+            new ConfigurableRouter(createContext([{
                 "method": null,
                 "handler": "message_queue",
                 "queue_name": "test_q"
-            }]);
+            }]));
         }).toThrow();
 
         expect(() => {
-            router.setRoutes([{
+            new ConfigurableRouter(createContext([{
                 "path": "/v1/test",
                 "method": 324234,
                 "handler": "message_queue",
                 "queue_name": "test_q"
-            }]);
+            }]));
         }).toThrow();
 
         expect(() => {
-            router.setRoutes([{
+            new ConfigurableRouter(createContext([{
                 "path": "/v1/test",
                 "method": {},
                 "handler": "message_queue",
                 "queue_name": "test_q"
-            }]);
+            }]));
         }).toThrow();
 
         expect(() => {
-            router.setRoutes([{
+            new ConfigurableRouter(createContext([{
                 "path": "/v1/test",
                 "queue_name": "test_q"
-            }]);
+            }]));
         }).toThrow();
 
         expect(() => {
-            router.setRoutes([{
+            new ConfigurableRouter(createContext([{
                 "path": "/v1/test",
                 "handler": "message_queue",
-            }]);
+            }]));
         }).toThrow();
 
         expect(() => {
-            router.setRoutes([{
+            new ConfigurableRouter(createContext([{
                 "path": "/v1/test",
                 "handler": "reverse_proxy",
-            }]);
+            }]));
         }).toThrow();
     });
 
@@ -153,8 +99,7 @@ describe("Testing the configuration router", () => {
         const rpHandler = jest.fn();
         const next = jest.fn();
         const res = jest.fn();
-        const router = require("../lib/configurable-router")(context);
-        router.setRoutes([
+        const router = new ConfigurableRouter(createContext([
             {
                 "path": "/v1/test_1",
                 "handler": "message_queue",
@@ -169,31 +114,31 @@ describe("Testing the configuration router", () => {
                 "handler": "reverse_proxy",
                 "redirect_path": "http://www.example.com"
             },
-        ]);
+        ]));
         router.on("message_queue", mqHandler);
         router.on("reverse_proxy", rpHandler);
-        router({
+        router.middleware({
             path: "/v1/test_1",
             method: "GET"
         }, res, next);
         expect(mqHandler).toHaveBeenCalledTimes(1);
         expect(rpHandler).toHaveBeenCalledTimes(0);
         expect(next).toHaveBeenCalledTimes(0);
-        router({
+        router.middleware({
             path: "/v1/test_2",
             method: "GET"
         }, res, next);
         expect(mqHandler).toHaveBeenCalledTimes(1);
         expect(rpHandler).toHaveBeenCalledTimes(1);
         expect(next).toHaveBeenCalledTimes(0);
-        router({
+        router.middleware({
             path: "/v1/asdfsd",
             method: "GET"
         }, res, next);
         expect(mqHandler).toHaveBeenCalledTimes(1);
         expect(rpHandler).toHaveBeenCalledTimes(1);
         expect(next).toHaveBeenCalledTimes(1);
-        router({
+        router.middleware({
             path: "/v1/test_3_abc",
             method: "GET"
         }, {}, next);

@@ -19,7 +19,6 @@ class RestMQ {
             amqpConn: this._amqpConn,
             config: this._config,
             logger: this._logger,
-            proxy: this._proxy
         }
     }
 
@@ -63,9 +62,9 @@ class RestMQ {
         this._amqpConn = await amqp.connect(this._config.amqpUrl);
         this._amqpChannel = await this._amqpConn.createChannel();
         this._logger.info("Message queue initialized.");
-
-        this._proxy = httpProxy.createProxyServer();
-        this._proxy.on("error", e => this._logger.error(e));
+        //
+        // this._proxy = httpProxy.createProxyServer();
+        // this._proxy.on("error", e => this._logger.error(e));
 
         const apiRouter = await require('./routes/api')(this.getContext());
         const heartBeatRouter = await require('./routes/heart-beat')(this.getContext());

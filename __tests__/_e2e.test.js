@@ -86,8 +86,31 @@ describe("End to End Test", () => {
     });
 
     it("should be able to do a sync round trip", async (done) => {
-        const response = await request(express)
+        let response = await request(express)
             .get("/api/v1/e2e_test")
+            .expect(200);
+        expect(response).toBeTruthy();
+        response = await request(express)
+            .post("/api/v1/e2e_test")
+            .send({
+                'lorem': "ipsum",
+            })
+            .set('Content-Type', 'application/json')
+            .set('Accept', 'application/json')
+            .expect(200);
+        expect(response).toBeTruthy();
+        response = await request(express)
+            .post("/api/v1/e2e_test")
+            .send("lorem ipsum")
+            .set('Content-Type', 'text/plain')
+            .set('Accept', 'text/plain')
+            .expect(200);
+        expect(response).toBeTruthy();
+        response = await request(express)
+            .post("/api/v1/e2e_test")
+            .send("<p>lorem ipsum</p>")
+            .set('Content-Type', 'text/html')
+            .set('Accept', 'text/plain')
             .expect(200);
         expect(response).toBeTruthy();
         done();

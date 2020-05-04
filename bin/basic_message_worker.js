@@ -7,7 +7,7 @@ const logLevel = [
     "debug",
 ].includes(process.env.LOG_LEVEL.toString().toLowerCase()) ? process.env.LOG_LEVEL : "warning";
 const loggerFormat = winston.format.printf(({ level, message, timestamp }) => {
-    return `[${timestamp}][${level.toUpperCase()}]: ${message}`;
+    return `[WORKER][${timestamp}][${level.toUpperCase()}]:\t${message}`;
 });
 const logger = winston.createLogger({
     level: logLevel,

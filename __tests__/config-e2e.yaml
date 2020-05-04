@@ -1,0 +1,22 @@
+external_url: http://localhost:8080
+internal_url: http://localhost:8080
+log_tag: SERVER
+log_level: DEBUG
+jwt_secret: rRUSOWmx1r
+port: 8080
+reply_queue: reply_q
+file_exchange:
+    type: file
+    path: C:\Users\apoon\Documents\code\personal\restful-mq\var\exchage
+api:
+    -
+        path: /v1/e2e_test
+        method: ~
+        handler: message_queue
+        queue_name: e2e_test_input_queue
+    -
+        path: /v1/heart-beat
+        method: GET
+        handler: reverse_proxy
+        redirect_path: http://localhost:8080/heart-beat
+        ignore_path: true

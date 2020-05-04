@@ -1,62 +1,16 @@
 const express = require('express');
-const NodeCache = require("node-cache");
+const ReplyListener = require("../lib/reply-listener");
 const _ = require("lodash");
 const jwt = require('jsonwebtoken');
 const moment = require("moment");
+const router = express.Router();
 
 module.exports = async (context) => {
     const config = context.config;
     const logger = context.logger;
-    const channel = context.amqpChannel;
-    const queueName = config.replyQueue;
     const jwtSecret = config.jwtSecret;
-    const router = express.Router();
-
-    const replies = new NodeCache({
-        stdTTL: 60 * 60 * 24,
-        checkperiod: 30
-    });
-
-    const clients = new NodeCache({
-        stdTTL: 30,
-        checkperiod: 1,
-        useClones: false
-    });
-
-    await channel.assertQueue(queueName, {
-        durable: false
-    });
-
-    channel.consume(queueName, (msg) => {
-        logger.info("Received a reply.");
-        logger.debug("Message: " + msg.content.toString());
-        const ticket = JSON.parse(msg.content.toString());
-        let isValid = !!ticket.id;
-        if (!isValid) {
-            logger.info("Invalid reply received. Ticket missing id. Message dropped.");
-        }
-        isValid = isValid && !!ticket.response;
-        if (!isValid) {
-            logger.info("Invalid reply received. Ticket missing response. Message dropped.");
-        }
-        if (isValid) {
-            const result = replies.set(ticket.id, ticket.response);
-            if (!result) {
-                logger.error("Unable to cache response for ticket #" + ticket.id);
-            }
-        }
-        channel.ack(msg);
-    });
-
-    replies.on("set", (key, value) => {
-        if (clients.has(key)) {
-            const response = replies.get(key);
-            const client = clients.take(key);
-            client.res.send(response);
-        }
-    });
-
-
+    const listener = new ReplyListener(context);
+    await listener.start();
     router.get("/:id", (req, res, next) => {
         const authHeader = req.header("Authorization");
         const match = /^Bearer (.+)$/.exec(authHeader);
@@ -91,32 +45,17 @@ module.exports = async (context) => {
         }
 
         // TODO: handle worker rejection
-
-        if (replies.has(ticketId)) {
-            const content = replies.get(ticketId);
-            res.send(content).send();
-        } else {
-            clients.set(ticketId, {
-                res
-            });
-            req.on("close", function(err) {
-                if (clients.has(ticketId)) {
-                    logger.info("Client was waiting for a reply but connection closed before reply was received");
-                    logger.info(err);
-                    clients.del(ticketId);
-                }
-            });
-        }
+        listener.onReply(ticketId,
+            (reply) => {
+                res.send(reply);
+            }, () => {
+                res.sendStatus(504);
+            }
+        );
     });
 
     router.get("/_cache", (req, res, next) => {
-        const keys = replies.keys();
-        const values = replies.mget(keys);
-        const status = replies.getStats();
-        res.json({
-            status,
-            cache: values
-        });
+        res.json(listener.getStatus());
     });
 
     return router;

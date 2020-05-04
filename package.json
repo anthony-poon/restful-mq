@@ -20,6 +20,7 @@
         "lodash": "^4.17.15",
         "moment": "^2.25.1",
         "node-cache": "^5.1.0",
+        "normalize-url": "^5.0.0",
         "uniqid": "^5.2.0",
         "winston": "^3.2.1"
     },

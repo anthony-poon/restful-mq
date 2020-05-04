@@ -4,21 +4,9 @@ let server = null;
 let worker = null;
 let express = null;
 beforeAll((done) => {
-    const config =
-        {
-            "__APP__": {
-                log_level: "DEBUG",
-                jwt_secret: "secret",
-                reply_queue: "e2e_test_reply_queue"
-            },
-            "api": [
-                {
-                    path: "/v1/e2e_test",
-                    handler: "message_queue",
-                    queue_name: "e2e_test_input_queue"
-                }
-            ]
-        };
+    const yaml = require('js-yaml');
+    const fs = require('fs');
+    const config = yaml.safeLoad(fs.readFileSync(__dirname + "/./config-e2e.yaml", "utf-8"));
     process.env.INPUT_QUEUE = "e2e_test_input_queue";
     process.env.LOG_LEVEL = "debug";
     process.env.MOCK_DELAY = 1000;

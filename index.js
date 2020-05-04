@@ -6,6 +6,8 @@ const winston = require('winston');
 const amqp = require('amqplib');
 const http = require('http');
 const bodyParser = require("body-parser");
+const os = require("os");
+
 class RestMQ {
     constructor(config = {}) {
         this.context = {
@@ -34,11 +36,16 @@ class RestMQ {
 
         this.context.config.replyQueue = config["reply_queue"] || uniqid();
         this.context.config.api = config["api"] || [];
+
+        this.context.config.internalUrl = config["internal_url"] || "http://" + os.hostname() + ":"  + this.context.config.port;
+        this.context.config.externalUrl = config["external_url"] || "http://localhost:" + this.context.config.port;
+
+        this.context.config.logTag = config["log_tag"] || ""
     }
 
     async start() {
         const loggerFormat = winston.format.printf(({ level, message, timestamp }) => {
-            return `[${timestamp}][${level.toUpperCase()}]: ${message}`;
+            return "[" + this.context.config.logTag + "]"+ `[${timestamp}][${level.toUpperCase()}]:\t${message}`;
         });
         this.context.logger = winston.createLogger({
             level: this.context.config.logLevel,

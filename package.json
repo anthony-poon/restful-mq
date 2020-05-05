@@ -14,16 +14,17 @@
         "body-parser": "^1.19.0",
         "debug": "~2.6.9",
         "express": "~4.16.1",
+        "formidable": "latest",
         "http-proxy": "^1.18.0",
         "js-yaml": "^3.13.1",
         "jsonwebtoken": "^8.5.1",
         "lodash": "^4.17.15",
+        "md5": "^2.2.1",
         "moment": "^2.25.1",
         "node-cache": "^5.1.0",
         "normalize-url": "^5.0.0",
         "uniqid": "^5.2.0",
-        "winston": "^3.2.1",
-        "formidable": "latest"
+        "winston": "^3.2.1"
     },
     "devDependencies": {
         "concurrently": "^5.2.0",

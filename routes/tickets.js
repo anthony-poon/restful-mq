@@ -4,14 +4,21 @@ const _ = require("lodash");
 const jwt = require('jsonwebtoken');
 const moment = require("moment");
 const router = express.Router();
+const path = require("path");
 
 module.exports = async (context) => {
     const config = context.config;
     const logger = context.logger;
     const jwtSecret = config.jwtSecret;
+    const fileStorage = config.fileStorage;
     const listener = new ReplyListener(context);
     await listener.start();
-    router.get("/:id", (req, res, next) => {
+
+    router.get("/_cache", (req, res, next) => {
+        res.json(listener.getStatus());
+    });
+
+    router.get("/:id*", (req, res, next) => {
         const authHeader = req.header("Authorization");
         const match = /^Bearer (.+)$/.exec(authHeader);
         if (!match) {
@@ -43,6 +50,24 @@ module.exports = async (context) => {
             res.status(403).send();
             return
         }
+        req.decodedJWT = decoded;
+        next();
+    });
+
+    router.get("/:id/attachments/:fileName", (req, res, next)=> {
+        const attachments = req.decodedJWT.attachments;
+        const ticketId = req.params.id;
+        const fileName = req.params.fileName;
+        if (!attachments.includes(fileName)) {
+            logger.info("No permission to access this resources");
+            res.status(403).send();
+        }
+        const attachmentPath = path.join(fileStorage, ticketId, fileName);
+        res.sendFile(attachmentPath);
+    });
+
+    router.get("/:id", (req, res, next) => {
+        const ticketId = req.params.id;
 
         // TODO: handle worker rejection
         listener.onReply(ticketId,
@@ -52,10 +77,6 @@ module.exports = async (context) => {
                 res.sendStatus(504);
             }
         );
-    });
-
-    router.get("/_cache", (req, res, next) => {
-        res.json(listener.getStatus());
     });
 
     return router;

@@ -35,30 +35,29 @@ const worker = {
         this.channel.consume(inputQueue, async (msg) => {
             logger.info("Message received.");
             logger.debug("Message: " + msg.content.toString());
-            const payload = JSON.parse(msg.content.toString());
-            const ticket = payload.ticket;
-            if (!ticket || !ticket.reply_to || !ticket.id) {
-                logger.warning("Invalid message. Message dropped");
+            this.channel.ack(msg);
+            const ticket = JSON.parse(msg.content.toString());
+            if (!ticket || !ticket.replyTo || !ticket.ticketId) {
+                logger.warn("Invalid message. Message dropped");
+            } else {
+                await this.channel.assertQueue(ticket.replyTo, {
+                    durable: false
+                });
+                const reply = {
+                    id: ticket.ticketId,
+                    response: {
+                        received: moment().format(),
+                        ...ticket
+                    }
+                };
+                setTimeout(() => {
+                    reply["response"]["completed"] = moment().format();
+                    this.channel.sendToQueue(ticket.replyTo, Buffer.from(JSON.stringify(reply)));
+                    logger.info("Reply sent");
+                }, mock_delay);
             }
-            await this.channel.assertQueue(ticket.reply_to, {
-                durable: false
-            });
 
-            const reply = {
-                id: ticket.id,
-                response: {
-                    received: moment().format(),
-                    ...payload
-                }
 
-            };
-            setTimeout(() => {
-                reply["response"]["completed"] = moment().format();
-                this.channel.sendToQueue(ticket.reply_to, Buffer.from(JSON.stringify(reply)));
-                logger.info("Reply sent");
-            }, mock_delay);
-        }, {
-            noAck: true
         });
     },
 

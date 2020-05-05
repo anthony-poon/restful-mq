@@ -1,9 +1,9 @@
-const ConfigurableRouter = require("../lib/configurable-router");
-const MessageQueueHandler = require("../lib/message-queue-handler");
-const ReverseProxyHandler = require("../lib/reverse-proxy-handler");
+const APIRouter = require("./api-router");
+const MessageQueueHandler = require("./message-queue-handler");
+const ReverseProxyHandler = require("./reverse-proxy-handler");
 
 module.exports = async (context) => {
-    const router = new ConfigurableRouter(context);
+    const router = new APIRouter(context);
     const mqHandler = new MessageQueueHandler(context);
     const rpHandler = new ReverseProxyHandler(context);
     router.on("message_queue", mqHandler.middleware);

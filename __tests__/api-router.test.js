@@ -1,4 +1,4 @@
-const ConfigurableRouter = require("../lib/configurable-router");
+const APIRouter = require("../routes/api/api-router");
 
 const createContext = (routes) => {
     return {
@@ -37,14 +37,14 @@ describe("Testing the configuration router", () => {
                 "redirect_path": "http://www.example.com"
             }
         ];
-        const router = new ConfigurableRouter(createContext(routes));
+        const router = new APIRouter(createContext(routes));
         expect(router.routes.length).toBe(5);
     });
 
     it("validate incorrect config", () => {
 
         expect(() => {
-            new ConfigurableRouter(createContext([{
+            new APIRouter(createContext([{
                 "method": null,
                 "handler": "message_queue",
                 "queue_name": "test_q"
@@ -52,7 +52,7 @@ describe("Testing the configuration router", () => {
         }).toThrow();
 
         expect(() => {
-            new ConfigurableRouter(createContext([{
+            new APIRouter(createContext([{
                 "path": "/v1/test",
                 "method": 324234,
                 "handler": "message_queue",
@@ -61,7 +61,7 @@ describe("Testing the configuration router", () => {
         }).toThrow();
 
         expect(() => {
-            new ConfigurableRouter(createContext([{
+            new APIRouter(createContext([{
                 "path": "/v1/test",
                 "method": {},
                 "handler": "message_queue",
@@ -70,21 +70,21 @@ describe("Testing the configuration router", () => {
         }).toThrow();
 
         expect(() => {
-            new ConfigurableRouter(createContext([{
+            new APIRouter(createContext([{
                 "path": "/v1/test",
                 "queue_name": "test_q"
             }]));
         }).toThrow();
 
         expect(() => {
-            new ConfigurableRouter(createContext([{
+            new APIRouter(createContext([{
                 "path": "/v1/test",
                 "handler": "message_queue",
             }]));
         }).toThrow();
 
         expect(() => {
-            new ConfigurableRouter(createContext([{
+            new APIRouter(createContext([{
                 "path": "/v1/test",
                 "handler": "reverse_proxy",
             }]));
@@ -99,7 +99,7 @@ describe("Testing the configuration router", () => {
         const rpHandler = jest.fn();
         const next = jest.fn();
         const res = jest.fn();
-        const router = new ConfigurableRouter(createContext([
+        const router = new APIRouter(createContext([
             {
                 "path": "/v1/test_1",
                 "handler": "message_queue",

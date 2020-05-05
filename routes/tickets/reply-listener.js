@@ -1,5 +1,5 @@
 "use strict";
-const ApplicationContext = require("./application-context");
+const ApplicationContext = require("../../lib/application-context");
 const NodeCache = require("node-cache");
 
 class ReplyListener extends ApplicationContext {

@@ -1,4 +1,4 @@
-const ApplicationContext = require("./application-context");
+const ApplicationContext = require("../../lib/application-context");
 const httpProxy = require("http-proxy");
 class ReverseProxyHandler extends ApplicationContext {
     constructor(context = {}) {

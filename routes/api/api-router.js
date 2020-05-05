@@ -1,8 +1,8 @@
 "use strict";
 const _ = require('lodash');
-const ApplicationContext = require("./application-context");
+const ApplicationContext = require("../../lib/application-context");
 
-class ConfigurableRouter extends ApplicationContext {
+class APIRouter extends ApplicationContext {
     constructor(context = {}) {
         super(context);
         this._setRoutes(context.config.api);
@@ -85,4 +85,4 @@ class ConfigurableRouter extends ApplicationContext {
     };
 }
 
-module.exports = ConfigurableRouter;
+module.exports = APIRouter;

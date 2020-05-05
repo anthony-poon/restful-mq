@@ -9,6 +9,8 @@ const bodyParser = require("body-parser");
 const os = require("os");
 const fs = require("fs");
 const path = require('path');
+const md5 = require('md5');
+
 class RestMQ {
     constructor(config = {}) {
         // TODO: consider object freeze
@@ -36,7 +38,7 @@ class RestMQ {
         this.context.config.port = config["port"] || 8080;
         this.context.config.amqpUrl = config["amqp_url"] || "amqp://localhost";
 
-        this.context.config.replyQueue = config["reply_queue"] || uniqid();
+        this.context.config.replyQueue = config["reply_queue"] || md5(uniqid());
         this.context.config.api = config["api"] || [];
 
         this.context.config.internalUrl = config["internal_url"] || "http://" + os.hostname() + ":"  + this.context.config.port;
@@ -74,13 +76,10 @@ class RestMQ {
             this.context.amqpConnection = await amqp.connect(this.context.config.amqpUrl);
             this.context.amqpChannel = await this.context.amqpConnection.createChannel();
             this.context.logger.info("Message queue initialized.");
-            //
-            // this._proxy = httpProxy.createProxyServer();
-            // this._proxy.on("error", e => this._logger.error(e));
 
             const apiRouter = await require('./routes/api')(this.context);
             const heartBeatRouter = await require('./routes/heart-beat')(this.context);
-            const ticketsRouter =await  require('./routes/tickets')(this.context);
+            const ticketsRouter = await  require('./routes/tickets')(this.context);
 
             this.context.app.use('/api', apiRouter);
             this.context.app.use('/heart-beat', heartBeatRouter);

@@ -35,7 +35,6 @@ class MessageQueueHandler extends ApplicationContext{
                 ticketId
             }, jwtSecret);
 
-            // TODO: Create internal token -> sent to queue -> create api to send and receive file
             const message = new InternalMessageDTO();
             const request =  {
                 "url": req.url,
@@ -87,19 +86,21 @@ class MessageQueueHandler extends ApplicationContext{
                 });
                 request.content = { ...fields };
                 // TODO: Config internal exp
-                const internalToken = jwt.sign({
+                message.attachments = files;
+                message.jwtToken = jwt.sign({
                     exp: moment().add(1, "hours").unix(),
                     ticketId,
                     attachments: _.map(files, f => f.name)
                 }, jwtSecret);
-                message.attachments = files;
-                message.jwtToken = internalToken;
             } else {
+                message.jwtToken = jwt.sign({
+                    exp: moment().add(1, "hours").unix(),
+                    ticketId,
+                }, jwtSecret);
                 request.content = req.body;
             }
 
             message.request = request;
-
 
             logger.info("Proxying request to " + context["queue_name"]);
             channel.sendToQueue(context["queue_name"], Buffer.from(message.toJSON()));

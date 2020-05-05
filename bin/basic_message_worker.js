@@ -1,5 +1,7 @@
 "use strict";
 const winston = require('winston');
+const RestfulMQMessageListener = require("../lib/restful-mq-message-listener");
+
 const logLevel = [
     "error",
     "warning",
@@ -25,49 +27,22 @@ const inputQueue = process.env.INPUT_QUEUE;
 const moment = require("moment");
 const mock_delay = parseInt(process.env.MOCK_DELAY) || 5000;
 const worker = {
-
     async start() {
-        this.conn = await amqp.connect('amqp://localhost');
-        this.channel = await this.conn.createChannel();
-        await this.channel.assertQueue(inputQueue, {
+        const listener = new RestfulMQMessageListener({
+            url: 'amqp://localhost',
+            queue: inputQueue
+        }, null, {
             durable: false
         });
-        this.channel.consume(inputQueue, async (msg) => {
-            logger.info("Message received.");
-            logger.debug("Message: " + msg.content.toString());
-            this.channel.ack(msg);
-            const ticket = JSON.parse(msg.content.toString());
-            if (!ticket || !ticket.replyTo || !ticket.ticketId) {
-                logger.warn("Invalid message. Message dropped");
-            } else {
-                await this.channel.assertQueue(ticket.replyTo, {
-                    durable: false
-                });
-                const reply = {
-                    id: ticket.ticketId,
-                    response: {
-                        received: moment().format(),
-                        ...ticket
-                    }
-                };
-                setTimeout(() => {
-                    reply["response"]["completed"] = moment().format();
-                    this.channel.sendToQueue(ticket.replyTo, Buffer.from(JSON.stringify(reply)));
-                    logger.info("Reply sent");
-                }, mock_delay);
-            }
-
-
+        listener.onMessageReceived((msg, context) => {
+            logger.info(JSON.stringify(msg));
+            context.reply("ok");
         });
+        listener.onError(e => {
+            logger.error(e);
+        });
+        listener.start()
     },
-
-    async stop() {
-        if (!this.channel || !this.conn) {
-            throw new Error("Cannot stop a worker that have not started yet");
-        }
-        await this.channel.close();
-        await this.conn.close();
-    }
 };
 
 if (require.main === module) {

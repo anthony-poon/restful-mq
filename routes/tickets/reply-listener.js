@@ -1,6 +1,7 @@
 "use strict";
 const ApplicationContext = require("../../lib/application-context");
 const NodeCache = require("node-cache");
+const jwt = require("jsonwebtoken");
 
 class ReplyListener extends ApplicationContext {
     constructor(context = {}) {
@@ -29,6 +30,7 @@ class ReplyListener extends ApplicationContext {
         const queueName = this.config.replyQueue;
         const logger = this.logger;
         const replyCache = this.replyCache;
+        const jwtSecret = this.config.jwtSecret;
         await channel.assertQueue(queueName, {
             durable: false
         });
@@ -36,21 +38,34 @@ class ReplyListener extends ApplicationContext {
             logger.info("Received a reply.");
             logger.debug("Message: " + msg.content.toString());
             const reply = JSON.parse(msg.content.toString());
-            let isValid = !!reply.id;
-            if (!isValid) {
-                logger.info("Invalid reply received. Ticket missing id. Message dropped.");
+            // TODO: Test nack;
+            if (!reply.ticketId) {
+                logger.info("Reply missing ticketId. Message dropped.");
+                channel.nack(msg, false, false);
+                return;
             }
-            isValid = isValid && !!reply.response;
-            if (!isValid) {
-                logger.info("Invalid reply received. Ticket missing response. Message dropped.");
+            if (!reply.body) {
+                logger.info("Reply missing body. Message dropped.");
+                channel.nack(msg, false, false);
+                return;
             }
-            if (isValid) {
-                const result = replyCache.set(reply.id, reply.response);
+            if (!reply.jwtToken) {
+                logger.info("Reply missing jwtToken. Message dropped.");
+                channel.nack(msg, false, false);
+                return;
+            }
+            try {
+                jwt.verify(reply.jwtToken, jwtSecret);
+                channel.ack(msg);
+                const result = replyCache.set(reply.ticketId, reply.body);
                 if (!result) {
                     logger.error("Unable to cache response for ticket #" + reply.id);
                 }
+            } catch (e) {
+                logger.info("Reply rejected due to invalid JWT");
+                logger.info(e);
+                channel.nack(msg, false, false);
             }
-            channel.ack(msg);
         });
     }
 

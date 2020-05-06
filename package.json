@@ -24,7 +24,8 @@
         "node-cache": "^5.1.0",
         "normalize-url": "^5.0.0",
         "uniqid": "^5.2.0",
-        "winston": "^3.2.1"
+        "winston": "^3.2.1",
+        "form-data": "latest"
     },
     "devDependencies": {
         "concurrently": "^5.2.0",

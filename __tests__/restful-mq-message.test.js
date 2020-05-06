@@ -36,6 +36,7 @@ describe("Test RestfulMQMessageHelper class", () => {
                 }
             ],
             "replyTo": "3ey1igok9tt2w5c",
+            "accept": "*/*"
         };
         const msg = new RestfulMQMessageHelper(raw);
         expect(msg).toBeTruthy();
@@ -46,7 +47,7 @@ describe("Test RestfulMQMessageHelper class", () => {
         expect(msg.ip).toEqual(raw["request"]["ip"]);
         expect(msg.headers).toMatchObject(raw["request"]["headers"]);
         expect(msg.jwtToken).toEqual(raw["jwtToken"]);
-    })
+    });
 
     it("should throw error if some field is missing", () => {
         const raw = {

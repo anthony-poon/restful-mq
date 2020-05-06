@@ -1,7 +1,16 @@
 "use strict";
 const winston = require('winston');
 const RestfulMQMessageListener = require("../lib/restful-mq-message-listener");
+const fs = require("fs");
+const path = require("path");
+const os = require("os");
+const md5 = require("md5");
+const uniqid = require("uniqid");
+const moment = require("moment");
+const _ = require("lodash");
 
+const mock_delay = parseInt(process.env.MOCK_DELAY) || 5000;
+const inputQueue = process.env.INPUT_QUEUE;
 const logLevel = [
     "error",
     "warning",
@@ -19,14 +28,29 @@ const logger = winston.createLogger({
     ),
     transports: [ new winston.transports.Console() ]
 });
-
 logger.info("Logger initialized. Log level: " + logLevel.toUpperCase());
 
-const amqp = require('amqplib');
-const inputQueue = process.env.INPUT_QUEUE;
-const moment = require("moment");
-const mock_delay = parseInt(process.env.MOCK_DELAY) || 5000;
+
+const defaultHandler = async (req, res) => {
+    logger.debug(JSON.stringify(req));
+    if (req.attachments.length) {
+        const attachments = await req.downloadAttachments();
+        const tmpFilePath = path.join(os.tmpdir(), md5(uniqid()));
+        fs.writeFileSync(tmpFilePath, JSON.stringify({
+            _meta: req.attachments,
+            attachments,
+        }));
+        res.sendFile(tmpFilePath)
+    } else if (req.headers["Accept"] === "text/pain") {
+        res.send("Message received at " + moment().format())
+    } else {
+        res.json({
+            "received": moment().format()
+        })
+    }
+};
 const worker = {
+    handler: defaultHandler,
     async start() {
         const listener = new RestfulMQMessageListener({
             url: 'amqp://localhost',
@@ -34,14 +58,11 @@ const worker = {
         }, null, {
             durable: false
         });
-        listener.onMessageReceived((msg, context) => {
-            logger.info(JSON.stringify(msg));
-            context.reply("ok");
-        });
+        listener.onMessageReceived(worker.handler);
         listener.onError(e => {
             logger.error(e);
         });
-        listener.start()
+        await listener.start()
     },
 };
 

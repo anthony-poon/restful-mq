@@ -5,6 +5,11 @@ const ReplyListener = require("./reply-listener");
 const express = require("express");
 const jwt = require("jsonwebtoken");
 const moment = require("moment");
+const path = require("path");
+const formidable = require("formidable");
+const fs = require("fs");
+const md5 = require("md5");
+const uniqid = require("uniqid");
 
 class TicketRouter extends ApplicationContext {
     constructor(context = {}) {
@@ -58,6 +63,38 @@ class TicketRouter extends ApplicationContext {
             next();
         });
 
+        this.middleware.post("/:id/attachments", async (req, res) => {
+            const ticketId = req.params.id;
+            logger.debug(req.header("content-type"));
+            // TODO: enable config
+            const parser = formidable({
+                maxFileSize: 200 * 1024 * 1024,
+                maxFields: 0,
+                maxFieldsSize: 20 * 1024 * 1024,
+                multiples: false
+            });
+            try {
+                parser.parse(req, (error, fields, files) => {
+                    if (error) {
+                        throw error;
+                    }
+                    if (files.length === 0) {
+                        throw new Error("No file received");
+                    }
+                    const fileName = md5(uniqid());
+                    if (!fs.existsSync(fileStorage + "/" + ticketId)) {
+                        fs.mkdirSync(fileStorage + "/" + ticketId);
+                    }
+                    fs.renameSync(files["upload"].path, fileStorage + "/" + ticketId + "/" + fileName);
+                    res.json({
+                        id: fileName
+                    });
+                });
+            } catch (e) {
+                res.status(500).send(e.message);
+            }
+        });
+
         this.middleware.get("/:id/attachments/:fileName", (req, res, next)=> {
             const attachments = req.decodedJWT.attachments;
             const ticketId = req.params.id;
@@ -76,7 +113,9 @@ class TicketRouter extends ApplicationContext {
             // TODO: handle worker rejection
             listener.onReply(ticketId,
                 (reply) => {
-                    res.send(reply);
+                    const contentType = reply.contentType;
+                    const httpStatus = reply.httpStatus;
+                    res.status(httpStatus).send(reply.body);
                 }, () => {
                     res.sendStatus(504);
                 }

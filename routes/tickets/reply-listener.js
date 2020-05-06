@@ -57,7 +57,7 @@ class ReplyListener extends ApplicationContext {
             try {
                 jwt.verify(reply.jwtToken, jwtSecret);
                 channel.ack(msg);
-                const result = replyCache.set(reply.ticketId, reply.body);
+                const result = replyCache.set(reply.ticketId, reply);
                 if (!result) {
                     logger.error("Unable to cache response for ticket #" + reply.id);
                 }

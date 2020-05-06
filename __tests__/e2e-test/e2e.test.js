@@ -1,5 +1,9 @@
 const request = require("supertest");
-const RestMQ = require("../index");
+const RestMQ = require("../../index");
+const path = require("path");
+const FormData = require("form-data");
+const fs = require("fs");
+
 let server = null;
 let worker = null;
 let express = null;
@@ -14,7 +18,7 @@ beforeAll((done) => {
         server = new RestMQ(config);
         await server.start();
         express = server.context.app;
-        worker = require("../bin/basic_message_worker");
+        worker = require("../../bin/basic_message_worker");
         await worker.start();
         done();
     })();
@@ -102,6 +106,17 @@ describe("End to End Test", () => {
             .expect(200);
         expect(response).toBeTruthy();
         done();
+    });
+
+    it("should be able to upload a file", async (done) => {
+        const data = new FormData();
+        data.append("test", fs.createReadStream(path.join(__dirname, "upload.txt")));
+        const response = await request(express)
+            .post("/api/v1/e2e_test")
+            .attach("test", path.join(__dirname, "upload.txt"))
+            .expect(200);
+        console.log(JSON.stringify(response));
+        done()
     });
 });
 

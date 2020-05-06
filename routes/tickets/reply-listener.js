@@ -56,8 +56,15 @@ class ReplyListener extends ApplicationContext {
             }
             try {
                 jwt.verify(reply.jwtToken, jwtSecret);
+                const decodedJWT = jwt.decode(reply.jwtToken, jwtSecret);
+                if (decodedJWT.ticketId !== reply.ticketId) {
+                    throw new Error("Invalid access on this ticket")
+                }
                 channel.ack(msg);
-                const result = replyCache.set(reply.ticketId, reply);
+                const result = replyCache.set(reply.ticketId, {
+                    ...reply,
+                    decodedJWT
+                });
                 if (!result) {
                     logger.error("Unable to cache response for ticket #" + reply.id);
                 }
@@ -69,18 +76,41 @@ class ReplyListener extends ApplicationContext {
         });
     }
 
-    onReply(ticketId, callback, onTimeout, timeout = 30) {
-        if (this.replyCache.has(ticketId)) {
-            callback(this.replyCache.take(ticketId));
-        } else {
-            this.listeners[ticketId] = callback;
+    wait(ticketId, timeout = 30000) {
+        return new Promise((resolve, reject) => {
+            if (this.replyCache.has(ticketId)) {
+                resolve(this.replyCache.take(ticketId))
+            } else {
+                this.listeners[ticketId] = resolve;
+            }
             setTimeout(() => {
-                if (!!this.listeners["ticketId"]) {
+                if (!!this.listeners[ticketId]) {
                     delete this.listeners[ticketId];
-                    onTimeout();
+                    const e = new Error("Request timeout.");
+                    e.statusCode = 504;
+                    reject(e);
                 }
             }, timeout);
+        })
+    }
+
+    onReply(ticketId, callback, onTimeout, timeout = 30) {
+        try {
+            if (this.replyCache.has(ticketId)) {
+                callback(this.replyCache.take(ticketId));
+            } else {
+                this.listeners[ticketId] = callback;
+                setTimeout(() => {
+                    if (!!this.listeners["ticketId"]) {
+                        delete this.listeners[ticketId];
+                        onTimeout();
+                    }
+                }, timeout);
+            }
+        } catch (e) {
+
         }
+
     }
 
     getStatus() {

@@ -49,8 +49,23 @@ const defaultHandler = async (req, res) => {
         })
     }
 };
+
+const rejectAllHandler = async (req, res) => {
+    logger.debug(JSON.stringify(req));
+    res.sendStatus(500);
+};
+
+const alwaysReturnFileHandler = async (req, res) => {
+    res.sendFile(path.join(__dirname, "www"));
+}
+
+const delayHandler = async (req, res) => {
+    setTimeout(() => {
+        res.send("ok")
+    }, 50000);
+}
 const worker = {
-    handler: defaultHandler,
+    handler: delayHandler,
     async start() {
         const listener = new RestfulMQMessageListener({
             url: 'amqp://localhost',
@@ -64,6 +79,13 @@ const worker = {
         });
         await listener.start()
     },
+
+    useDefaultHandler() {
+        this.handler = defaultHandler;
+    },
+    useRejectAllHandler() {
+        this.handler = rejectAllHandler();
+    }
 };
 
 if (require.main === module) {

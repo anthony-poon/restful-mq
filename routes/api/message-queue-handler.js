@@ -121,14 +121,32 @@ class MessageQueueHandler extends ApplicationContext{
                     const baseUrl = this.config.internalUrl;
                     const redirect = normalizeUrl(baseUrl + "/tickets/" + ticketId);
                     logger.info("Awaiting result at " + redirect);
-                    const response = await axios.get(redirect, {
-                        headers: {
-                            "Authorization": `Bearer ${externalToken}`
+                    try {
+                        const response = await axios.get(redirect, {
+                            headers: {
+                                "Authorization": `Bearer ${externalToken}`
+                            }
+                        });
+                        res
+                            .set({
+                                ...response.headers
+                            })
+                            .send(response.data);
+                    } catch (e) {
+                        logger.error(e);
+                        if (e.response) {
+                            res
+                                .status(e.response.status)
+                                .set({
+                                    ...e.response.headers
+                                })
+                                .send(e.response.data);
+                        } else if (e.request) {
+                            res.sendStatus(504);
+                        } else {
+                            res.sendStatus(500)
                         }
-                    });
-                    res
-                        .set("Content-Type", response.headers["content-type"])
-                        .send(response.data);
+                    }
                 }
             } catch (e) {
                 logger.error(e);

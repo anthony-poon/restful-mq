@@ -27,7 +27,7 @@ class TicketRouter extends ApplicationContext {
             res.json(listener.getStatus());
         });
 
-        this.middleware.get("/:id*", (req, res, next) => {
+        this.middleware.all("/:id*", (req, res, next) => {
             const authHeader = req.header("Authorization");
             const match = /^Bearer (.+)$/.exec(authHeader);
             if (!match) {
@@ -65,7 +65,6 @@ class TicketRouter extends ApplicationContext {
 
         this.middleware.post("/:id/attachments", async (req, res) => {
             const ticketId = req.params.id;
-            logger.debug(req.header("content-type"));
             // TODO: enable config
             const parser = formidable({
                 maxFileSize: 200 * 1024 * 1024,
@@ -86,8 +85,17 @@ class TicketRouter extends ApplicationContext {
                         fs.mkdirSync(fileStorage + "/" + ticketId);
                     }
                     fs.renameSync(files["upload"].path, fileStorage + "/" + ticketId + "/" + fileName);
+                    const decodedJWT = req.decodedJWT;
+                    if (!decodedJWT.attachments) {
+                        decodedJWT.attachments = [];
+                    }
+                    decodedJWT.attachments.push(fileName);
+                    const newJWT = jwt.sign({
+                        ...decodedJWT
+                    }, jwtSecret);
                     res.json({
-                        id: fileName
+                        id: fileName,
+                        jwtToken: newJWT
                     });
                 });
             } catch (e) {
@@ -107,19 +115,34 @@ class TicketRouter extends ApplicationContext {
             res.sendFile(attachmentPath);
         });
 
-        this.middleware.get("/:id", (req, res, next) => {
+        this.middleware.get("/:id", async (req, res, next) => {
             const ticketId = req.params.id;
-
             // TODO: handle worker rejection
-            listener.onReply(ticketId,
-                (reply) => {
-                    const contentType = reply.contentType;
-                    const httpStatus = reply.httpStatus;
+            try {
+                const reply = await listener.wait(ticketId);
+                const decodedJWT = reply.decodedJWT;
+                const httpStatus = reply.httpStatus;
+                const contentDisposition = reply.contentDisposition;
+                const match = /^attachment;\s+filename=['"](.+)['"]$/.exec(contentDisposition);
+                if (match) {
+                    const fileName = match[1];
+                    const fileId = reply.body.id;
+                    const filePath = path.join(this.config.fileStorage, ticketId, fileId);
+                    if (!fileId) {
+                        throw new Error("Invalid file id");
+                    }
+                    if (!decodedJWT.attachments.includes(fileId)) {
+                        throw new Error("Invalid access of file " + fileId);
+                    }
+                    res
+                        .status(httpStatus).download(filePath, fileName);
+                } else {
                     res.status(httpStatus).send(reply.body);
-                }, () => {
-                    res.sendStatus(504);
                 }
-            );
+            } catch (e) {
+                next(e);
+            }
+
         });
     }
 

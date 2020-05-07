@@ -14,7 +14,7 @@ class MessageQueueHandler extends ApplicationContext{
     constructor(context = {}) {
         super(context);
 
-        this.middleware = async (req, res, context) => {
+        this.middleware = async (req, res, routeProps) => {
             const channel = this.amqpChannel;
             const jwtSecret = this.config.jwtSecret;
             const replyQueue = this.config.replyQueue;
@@ -24,7 +24,7 @@ class MessageQueueHandler extends ApplicationContext{
             const timestamp = moment();
             try {
                 const ticketExp = isAsync ? timestamp.add(1, "days") : timestamp.add(2, "minutes");
-                await channel.assertQueue(context["queue_name"], {
+                await channel.assertQueue(routeProps["queue_name"], {
                     durable: false
                 });
 
@@ -107,8 +107,8 @@ class MessageQueueHandler extends ApplicationContext{
                 }
                 const message = new RestfulMQMessage(payload);
 
-                logger.info("Proxying request to " + context["queue_name"]);
-                channel.sendToQueue(context["queue_name"], Buffer.from(message.toJSON()));
+                logger.info("Proxying request to " + routeProps["queue_name"]);
+                channel.sendToQueue(routeProps["queue_name"], Buffer.from(message.toJSON()));
 
                 if (isAsync) {
                     res.json({

@@ -35,8 +35,6 @@ describe("End to End Test", () => {
     });
 
     it("should reject unauthorized request", async (done) => {
-        const moment = require("moment");
-        const MockDate = require("mockdate");
         await request(express)
             .get(`/tickets/abc`)
             .expect(401);

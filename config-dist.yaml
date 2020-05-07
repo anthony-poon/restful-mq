@@ -13,4 +13,4 @@ api:
         method: GET
         handler: reverse_proxy
         redirect_path: http://localhost:8080/heart-beat
-        ignore_path: true
+        append_path: false

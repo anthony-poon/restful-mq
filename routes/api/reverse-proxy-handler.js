@@ -7,7 +7,7 @@ class ReverseProxyHandler extends ApplicationContext {
         this.middleware = (req, res, context) => {
             proxy.web(req, res, {
                 target: context.redirect_path,
-                ignorePath: context.ignore_path
+                ignorePath: !context.append_path
             });
         };
         this.middleware.bind(this);

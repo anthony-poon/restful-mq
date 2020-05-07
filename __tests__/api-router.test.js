@@ -113,7 +113,28 @@ describe("Testing the configuration router", () => {
                 "match_type": "regex",
                 "handler": "reverse_proxy",
                 "redirect_path": "http://www.example.com"
-            },
+            },{
+                "path": "/v1/test_1",
+                "handler": "message_queue",
+                "queue_name": "should_not_be_called"
+            },{
+                "path": "\\/v1\\/(test)_(\\d)",
+                "match_type": "regex",
+                "handler": "reverse_proxy",
+                "redirect_path": "http://www.example.com/$1/$2"
+            },{
+                "path": "\\/v1\\/(test)_(❤)",
+                "match_type": "regex",
+                "handler": "reverse_proxy",
+                "redirect_path": "http://www.example.com/with_love?var=$2"
+            }
+            // Regex flag in string seems not working at the moment
+            // ,{
+            //     "path": "\/\\/v1\\/TEST_5\/i",
+            //     "match_type": "regex",
+            //     "handler": "reverse_proxy",
+            //     "redirect_path": "http://www.example.com/5"
+            // }
         ]));
         router.on("message_queue", mqHandler);
         router.on("reverse_proxy", rpHandler);
@@ -121,8 +142,9 @@ describe("Testing the configuration router", () => {
             path: "/v1/test_1",
             method: "GET"
         }, res, next);
-        expect(mqHandler).toHaveBeenCalledWith(expect.anything(), expect.anything(), expect.objectContaining ({
-            path: "/v1/test_1"
+        expect(mqHandler).toHaveBeenLastCalledWith(expect.anything(), expect.anything(), expect.objectContaining ({
+            path: "/v1/test_1",
+            "queue_name": "test_q"
         }));
         expect(rpHandler).toHaveBeenCalledTimes(0);
         expect(next).toHaveBeenCalledTimes(0);
@@ -131,7 +153,7 @@ describe("Testing the configuration router", () => {
             method: "GET"
         }, res, next);
         expect(mqHandler).toHaveBeenCalledTimes(1);
-        expect(rpHandler).toHaveBeenCalledWith(expect.anything(), expect.anything(), expect.objectContaining ({
+        expect(rpHandler).toHaveBeenLastCalledWith(expect.anything(), expect.anything(), expect.objectContaining ({
             path: "/v1/test_2"
         }));
         expect(next).toHaveBeenCalledTimes(0);
@@ -147,8 +169,26 @@ describe("Testing the configuration router", () => {
             method: "GET"
         }, {}, next);
         expect(mqHandler).toHaveBeenCalledTimes(1);
-        expect(rpHandler).toHaveBeenCalledWith(expect.anything(), expect.anything(), expect.objectContaining ({
+        expect(rpHandler).toHaveBeenLastCalledWith(expect.anything(), expect.anything(), expect.objectContaining ({
             redirect_path: "http://www.example.com"
+        }));
+        expect(next).toHaveBeenCalledTimes(1);
+        router.middleware({
+            path: "/v1/test_4",
+            method: "GET"
+        }, {}, next);
+        expect(mqHandler).toHaveBeenCalledTimes(1);
+        expect(rpHandler).toHaveBeenLastCalledWith(expect.anything(), expect.anything(), expect.objectContaining ({
+            redirect_path: "http://www.example.com/test/4"
+        }));
+        expect(next).toHaveBeenCalledTimes(1);
+        router.middleware({
+            path: "/v1/test_❤?asdf=bccx",
+            method: "GET"
+        }, {}, next);
+        expect(mqHandler).toHaveBeenCalledTimes(1);
+        expect(rpHandler).toHaveBeenLastCalledWith(expect.anything(), expect.anything(), expect.objectContaining ({
+            redirect_path: "http://www.example.com/with_love?var=❤"
         }));
         expect(next).toHaveBeenCalledTimes(1);
     });

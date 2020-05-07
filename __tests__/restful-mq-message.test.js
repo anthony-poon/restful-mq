@@ -85,6 +85,7 @@ describe("Test RestfulMQMessageHelper class", () => {
             ],
             "replyTo": "3ey1igok9tt2w5c",
         };
+        // TODO: make attachment non optional and truthy
         const optional = ["attachments"];
         _.forEach(Object.keys(raw), (key) => {
             const clone = {...raw};

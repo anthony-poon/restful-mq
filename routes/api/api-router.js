@@ -5,14 +5,12 @@ const ApplicationContext = require("../../lib/application-context");
 class APIRouter extends ApplicationContext {
     constructor(context = {}) {
         super(context);
-        this._setRoutes(context.config.api);
+        this._parseConfig(context.config.api);
         this.listeners = [];
         this.middleware = (req, res, next) => {
             const logger = this.logger;
             logger.info("Request received: " + req.method.toUpperCase() + " " + req.path);
-            // TODO: Multi match
-            // TODO: url rewrite
-            const match = _.find(this.routes, (routeProps) => {
+            const routeProps = _.find(this.routes, (routeProps) => {
                 const isMethodMatch = routeProps.methods[0] === "all" || routeProps.methods.includes(req.method.toLowerCase());
                 if (!isMethodMatch) {
                     return false;
@@ -25,10 +23,19 @@ class APIRouter extends ApplicationContext {
                         return regex.exec(req.path)
                 }
             });
-            if (match) {
-                const handler = this.listeners[match.handler];
+            if (routeProps) {
+                if (routeProps["handler"] === "reverse_proxy" && routeProps["match_type"] === "regex") {
+                    const regex = new RegExp(routeProps.path);
+                    const match = regex.exec(req.path);
+                    let newPath = routeProps["redirect_path"];
+                    for (let i = 1; i < match.length; i++) {
+                        newPath = newPath.replace("$" + i.toString(), match[i]);
+                    }
+                    routeProps["redirect_path"] = newPath;
+                }
+                const handler = this.listeners[routeProps.handler];
                 if (handler) {
-                    handler(req, res, match);
+                    handler(req, res, routeProps);
                 }
             } else {
                 next();
@@ -37,7 +44,7 @@ class APIRouter extends ApplicationContext {
         this.middleware.bind(this);
     }
 
-    _setRoutes(routes) {
+    _parseConfig(routes) {
         this.routes = [];
         _.forEach(routes, (routeProps, index) => {
             const rtn = {};
@@ -73,7 +80,7 @@ class APIRouter extends ApplicationContext {
                     throw new Error("Must specify redirect_path when using reverse_proxy handler.");
                 }
                 rtn["redirect_path"] = routeProps["redirect_path"];
-                rtn["ignore_path"] = !!routeProps["ignore_path"];
+                rtn["append_path"] = !!routeProps["append_path"];
             }
             this.routes.push(rtn);
         });

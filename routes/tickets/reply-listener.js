@@ -61,6 +61,7 @@ class ReplyListener extends ApplicationContext {
                     throw new Error("Invalid access on this ticket")
                 }
                 channel.ack(msg);
+                // TODO: reply checking and create dto for reply
                 const result = replyCache.set(reply.ticketId, {
                     ...reply,
                     decodedJWT
@@ -92,25 +93,6 @@ class ReplyListener extends ApplicationContext {
                 }
             }, timeout);
         })
-    }
-
-    onReply(ticketId, callback, onTimeout, timeout = 30) {
-        try {
-            if (this.replyCache.has(ticketId)) {
-                callback(this.replyCache.take(ticketId));
-            } else {
-                this.listeners[ticketId] = callback;
-                setTimeout(() => {
-                    if (!!this.listeners["ticketId"]) {
-                        delete this.listeners[ticketId];
-                        onTimeout();
-                    }
-                }, timeout);
-            }
-        } catch (e) {
-
-        }
-
     }
 
     getStatus() {

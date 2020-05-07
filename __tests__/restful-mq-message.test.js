@@ -21,7 +21,7 @@ describe("Test RestfulMQMessageHelper class", () => {
                     "content-type": "multipart/form-data; boundary=--------------------------129786234047862791474819",
                     "content-length": "2968"
                 },
-                "content": {
+                "body": {
                     "foo": "bar"
                 }
             },
@@ -35,6 +35,7 @@ describe("Test RestfulMQMessageHelper class", () => {
                     "contentType": "text/plain"
                 }
             ],
+            "api": "http://www.example.com",
             "replyTo": "3ey1igok9tt2w5c",
             "accept": "*/*"
         };

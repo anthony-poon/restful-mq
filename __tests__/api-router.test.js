@@ -121,7 +121,9 @@ describe("Testing the configuration router", () => {
             path: "/v1/test_1",
             method: "GET"
         }, res, next);
-        expect(mqHandler).toHaveBeenCalledTimes(1);
+        expect(mqHandler).toHaveBeenCalledWith(expect.anything(), expect.anything(), expect.objectContaining ({
+            path: "/v1/test_1"
+        }));
         expect(rpHandler).toHaveBeenCalledTimes(0);
         expect(next).toHaveBeenCalledTimes(0);
         router.middleware({
@@ -129,7 +131,9 @@ describe("Testing the configuration router", () => {
             method: "GET"
         }, res, next);
         expect(mqHandler).toHaveBeenCalledTimes(1);
-        expect(rpHandler).toHaveBeenCalledTimes(1);
+        expect(rpHandler).toHaveBeenCalledWith(expect.anything(), expect.anything(), expect.objectContaining ({
+            path: "/v1/test_2"
+        }));
         expect(next).toHaveBeenCalledTimes(0);
         router.middleware({
             path: "/v1/asdfsd",
@@ -143,7 +147,9 @@ describe("Testing the configuration router", () => {
             method: "GET"
         }, {}, next);
         expect(mqHandler).toHaveBeenCalledTimes(1);
-        expect(rpHandler).toHaveBeenCalledTimes(2);
+        expect(rpHandler).toHaveBeenCalledWith(expect.anything(), expect.anything(), expect.objectContaining ({
+            redirect_path: "http://www.example.com"
+        }));
         expect(next).toHaveBeenCalledTimes(1);
     });
 });

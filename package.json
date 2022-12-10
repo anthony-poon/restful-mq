@@ -13,7 +13,7 @@
         "axios": "^0.19.2",
         "body-parser": "^1.19.0",
         "debug": "~2.6.9",
-        "express": "~4.16.1",
+        "express": "~4.17.3",
         "formidable": "latest",
         "http-proxy": "^1.18.0",
         "js-yaml": "^3.13.1",
